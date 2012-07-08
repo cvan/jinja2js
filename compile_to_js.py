@@ -20,6 +20,20 @@ from jinja2.parser import Parser
 from jinja2.visitor import NodeVisitor
 
 
+def parse_template(data):
+    e = Environment()
+    e.add_extension('jinja2.ext.i18n')
+    return e.parse(data)
+
+
+def compile(raw='', template='', attributes=False):
+    if template:
+        with open(template) as fd:
+            raw = fd.read()
+    ast = parse_template(raw)
+    return JSVisitor(attributes=attributes).run(ast.body)
+
+
 def accessor(key, delimiter="']['"):
     idx = key.find('(')
     call = ''
@@ -350,16 +364,9 @@ class JSVisitor(NodeVisitor):
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="Jinja2JS 0.1")
 
-    def parse(data):
-        e = Environment()
-        e.add_extension("jinja2.ext.i18n")
-        return e.parse(data)
+    template = arguments['<template>']
+    attributes = arguments['--attributes']
 
-    with open(arguments["<template>"]) as fd:
-        ast = parse(fd.read())
-
-    tr = JSVisitor(attributes=arguments["--attributes"])
-    output = tr.run(ast.body)
-    if not arguments["--attributes"]:
+    output = compile(template=template, attributes=attributes)
+    if not attributes:
         print output
-
